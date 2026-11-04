@@ -1,0 +1,26 @@
+name: migrate
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch lecture pages from main repo
+        run: |
+          git clone --quiet https://github.com/aokid666/xizong-306.git /tmp/src
+          cd /tmp/src
+          SHA=$(git log --all --format=%H -- data/lec | head -1)
+          echo "src commit: $SHA"
+          git checkout $SHA -- data/lec
+          cp data/lec/*.webp "$GITHUB_WORKSPACE"/ 2>/dev/null || true
+          ls "$GITHUB_WORKSPACE" | wc -l
+      - name: Commit and push
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          git config user.email bot@xizong.local
+          git config user.name bot
+          git add -A
+          git commit -qm "lecture pages (1600px)" || true
+          git push
