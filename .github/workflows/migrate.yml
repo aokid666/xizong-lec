@@ -7,20 +7,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch lecture pages from main repo
+      - name: Download lecture pages (public tarball)
         run: |
-          git clone --quiet https://github.com/aokid666/xizong-306.git /tmp/src
-          cd /tmp/src
-          SHA=$(git log --all --format=%H -- data/lec | head -1)
-          echo "src commit: $SHA"
-          git checkout $SHA -- data/lec
-          cp data/lec/*.webp "$GITHUB_WORKSPACE"/ 2>/dev/null || true
-          ls "$GITHUB_WORKSPACE" | wc -l
-      - name: Commit and push
+          curl -sL -o /tmp/src.tar.gz https://codeload.github.com/aokid666/xizong-306/tar.gz/30cf5f00c8f1a16ae85712d2cd0ba4111ac137e1
+          ls -lh /tmp/src.tar.gz
+          mkdir -p /tmp/src
+          tar -xzf /tmp/src.tar.gz -C /tmp/src --strip-components=1
+          cp /tmp/src/data/lec/*.webp ""/ 2>/dev/null || true
+          ls "" | wc -l
+      - name: Commit and push in batches
         run: |
-          cd "$GITHUB_WORKSPACE"
+          cd ""
           git config user.email bot@xizong.local
           git config user.name bot
-          git add -A
-          git commit -qm "lecture pages (1600px)" || true
-          git push
+          git config http.postBuffer 524288000
+          i=0
+          for f in *.webp; do
+            git add ""; i=            if [ \ -eq 0 ]; then
+              git commit -qm "batch " && git push -q || { sleep 5; git push -q; }
+              echo "pushed "
+            fi
+          done
+          git add -A && git commit -qm "final" || true
+          git push -q || { sleep 5; git push -q; }
+          echo "done \ files"
