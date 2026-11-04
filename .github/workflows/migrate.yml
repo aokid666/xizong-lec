@@ -7,27 +7,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download lecture pages (public tarball)
+      - name: Download lecture pages
         run: |
           curl -sL -o /tmp/src.tar.gz https://codeload.github.com/aokid666/xizong-306/tar.gz/30cf5f00c8f1a16ae85712d2cd0ba4111ac137e1
           ls -lh /tmp/src.tar.gz
           mkdir -p /tmp/src
           tar -xzf /tmp/src.tar.gz -C /tmp/src --strip-components=1
-          cp /tmp/src/data/lec/*.webp ""/ 2>/dev/null || true
-          ls "" | wc -l
+          cp /tmp/src/data/lec/*.webp "$GITHUB_WORKSPACE"/ 2>/dev/null || true
+          ls "$GITHUB_WORKSPACE" | wc -l
       - name: Commit and push in batches
         run: |
-          cd ""
+          cd "$GITHUB_WORKSPACE"
           git config user.email bot@xizong.local
           git config user.name bot
           git config http.postBuffer 524288000
           i=0
           for f in *.webp; do
-            git add ""; i=            if [ \ -eq 0 ]; then
-              git commit -qm "batch " && git push -q || { sleep 5; git push -q; }
-              echo "pushed "
+            git add "$f"
+            i=$((i+1))
+            if [ $((i % 400)) -eq 0 ]; then
+              git commit -qm "batch $i" && (git push -q || { sleep 5; git push -q; })
+              echo "pushed $i"
             fi
           done
           git add -A && git commit -qm "final" || true
           git push -q || { sleep 5; git push -q; }
-          echo "done \ files"
+          echo "done $i files"
